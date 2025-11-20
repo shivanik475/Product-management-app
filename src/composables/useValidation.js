@@ -1,7 +1,11 @@
 export function useValidation(requiredFields, limits, numberFields) {
   const validateField = (name, value) => {
-    // If numeric field → allow only digits
-    if (numberFields.includes(name) && !/^\d*$/.test(value)) return false;
+    // For amount fields (decimals allowed)
+    if (['variableDenomPriceMinAmount', 'variableDenomPriceMaxAmount'].includes(name)) {
+      if (value && !/^\d+(\.\d{0,2})?$/.test(value)) return false;
+    } 
+    // Other numeric fields → integers only
+    else if (numberFields.includes(name) && !/^\d*$/.test(value)) return false;
 
     // If text field has max length → block exceeding input
     if (limits[name] && value && value.length > limits[name]) return false;

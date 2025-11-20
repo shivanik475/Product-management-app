@@ -132,8 +132,9 @@
             type="text"
             v-model="formData.variableDenomPriceMinAmount"
             @input="handleInput('variableDenomPriceMinAmount', $event.target.value)"
-            class="form-input"
+            :class="['form-input', { 'form-input--error': errors.variableDenomPriceMinAmount }]"
           />
+          <p v-if="errors.variableDenomPriceMinAmount" class="error">{{ errors.variableDenomPriceMinAmount }}</p>
         </div>
         <div class="form-field">
           <label for="max-amount">Max Amount</label>
@@ -142,8 +143,9 @@
             type="text"
             v-model="formData.variableDenomPriceMaxAmount"
             @input="handleInput('variableDenomPriceMaxAmount', $event.target.value)"
-            class="form-input"
+            :class="['form-input', { 'form-input--error': errors.variableDenomPriceMaxAmount }]"
           />
+          <p v-if="errors.variableDenomPriceMaxAmount" class="error">{{ errors.variableDenomPriceMaxAmount }}</p>
         </div>
       </div>
 
@@ -195,31 +197,49 @@ const numberFields = ['gvtId','variableDenomPriceMinAmount','variableDenomPriceM
 const { validateField } = useValidation(requiredFields, limits, numberFields);
 const errors = reactive({});
 
-// handle input changes
 const handleInput = (name, value) => {
   formData[name] = value;
 
-  // validate numeric and length
-  if (!validateField(name, value)) {
-    errors[name] = `Invalid ${name}`;
-  } 
-  // check required field
+  // Numeric validation
+  if (numberFields.includes(name) && !/^\d*$/.test(value)) {
+    errors[name] = "Only numbers are allowed";
+  }
+  // Length limits
+  else if (limits[name] && value.length > limits[name]) {
+    errors[name] = `Maximum ${limits[name]} characters allowed`;
+  }
+  // Required fields
   else if (requiredFields.includes(name) && !String(value ?? '').trim()) {
     errors[name] = "This field is required";
-  } 
+  }
   else {
     errors[name] = '';
   }
+
+  // Min/Max amount logic
+  const min = parseFloat(formData.variableDenomPriceMinAmount);
+  const max = parseFloat(formData.variableDenomPriceMaxAmount);
+
+  if (!isNaN(min) && !isNaN(max) && min > max) {
+    errors.variableDenomPriceMinAmount = "Min Amount should be less than or equal to Max Amount";
+    errors.variableDenomPriceMaxAmount = "Max Amount should be greater than or equal to Min Amount";
+  } else {
+    // Only clear these errors if they were previously set
+    if (errors.variableDenomPriceMinAmount === "Min Amount should be less than or equal to Max Amount") {
+      errors.variableDenomPriceMinAmount = '';
+    }
+    if (errors.variableDenomPriceMaxAmount === "Max Amount should be greater than or equal to Min Amount") {
+      errors.variableDenomPriceMaxAmount = '';
+    }
+  }
 };
 
-// computed property for overall form validity
 const isFormValid = computed(() => {
   const requiredValid = requiredFields.every(f => String(formData[f] ?? '').trim());
   const noErrors = Object.values(errors).every(e => !e);
   return requiredValid && noErrors;
 });
 
-// submit handler
 const handleSubmit = () => {
   logger.info("Form submission clicked...");
 
