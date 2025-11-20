@@ -71,7 +71,7 @@ src/
 ## Installation
 1. **go to repository**
 ```bash
-cd vue-product-management-app
+cd Product-management-app
 ```
 
 2. **Install dependencies**
