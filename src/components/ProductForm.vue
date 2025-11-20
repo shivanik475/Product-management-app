@@ -4,6 +4,7 @@
 
     <form @submit.prevent="handleSubmit" class="form">
 
+      <!-- ID (edit only) -->
       <div class="form-field" v-if="isEdit">
         <label for="product-id">ID</label>
         <input
@@ -15,6 +16,7 @@
         />
       </div>
 
+      <!-- Name -->
       <div class="form-field">
         <label for="product-name">Name *</label>
         <input
@@ -23,11 +25,11 @@
           v-model="formData.name"
           @input="handleInput('name', $event.target.value)"
           :class="['form-input', { 'form-input--error': errors.name }]"
-          required
         />
         <p v-if="errors.name" class="error">{{ errors.name }}</p>
       </div>
 
+      <!-- GVT ID -->
       <div class="form-field">
         <label for="gvt-id">GVT ID *</label>
         <input
@@ -36,11 +38,11 @@
           v-model="formData.gvtId"
           @input="handleInput('gvtId', $event.target.value)"
           :class="['form-input', { 'form-input--error': errors.gvtId }]"
-          required
         />
         <p v-if="errors.gvtId" class="error">{{ errors.gvtId }}</p>
       </div>
 
+      <!-- Product Tagline -->
       <div class="form-field">
         <label for="product-tagline">Product Tagline *</label>
         <input
@@ -49,11 +51,11 @@
           v-model="formData.productTagline"
           @input="handleInput('productTagline', $event.target.value)"
           :class="['form-input', { 'form-input--error': errors.productTagline }]"
-          required
         />
         <p v-if="errors.productTagline" class="error">{{ errors.productTagline }}</p>
       </div>
 
+      <!-- Product URL -->
       <div class="form-field">
         <label for="product-url">Product URL *</label>
         <input
@@ -63,11 +65,11 @@
           @input="handleInput('productUrl', $event.target.value)"
           :class="['form-input', { 'form-input--error': errors.productUrl }]"
           placeholder="/ca/game-of-sultans"
-          required
         />
         <p v-if="errors.productUrl" class="error">{{ errors.productUrl }}</p>
       </div>
 
+      <!-- Order URL -->
       <div class="form-field">
         <label for="order-url">Order URL *</label>
         <input
@@ -77,11 +79,11 @@
           @input="handleInput('orderUrl', $event.target.value)"
           :class="['form-input', { 'form-input--error': errors.orderUrl }]"
           placeholder="https://example.com/order"
-          required
         />
         <p v-if="errors.orderUrl" class="error">{{ errors.orderUrl }}</p>
       </div>
 
+      <!-- Short Description -->
       <div class="form-field">
         <label for="short-desc">Short Description *</label>
         <textarea
@@ -90,11 +92,11 @@
           @input="handleInput('shortDescription', $event.target.value)"
           :class="['form-textarea', { 'form-textarea--error': errors.shortDescription }]"
           rows="3"
-          required
         ></textarea>
         <p v-if="errors.shortDescription" class="error">{{ errors.shortDescription }}</p>
       </div>
 
+      <!-- Long Description -->
       <div class="form-field">
         <label for="long-desc">Long Description *</label>
         <textarea
@@ -103,11 +105,11 @@
           @input="handleInput('longDescription', $event.target.value)"
           :class="['form-textarea', { 'form-textarea--error': errors.longDescription }]"
           rows="5"
-          required
         ></textarea>
         <p v-if="errors.longDescription" class="error">{{ errors.longDescription }}</p>
       </div>
 
+      <!-- Logo URL -->
       <div class="form-field">
         <label for="logo-url">Logo URL</label>
         <input
@@ -121,6 +123,7 @@
         <p v-if="errors.logoLocation" class="error">{{ errors.logoLocation }}</p>
       </div>
 
+      <!-- Min/Max Amount -->
       <div class="form-row">
         <div class="form-field">
           <label for="min-amount">Min Amount</label>
@@ -144,6 +147,7 @@
         </div>
       </div>
 
+      <!-- Action Buttons -->
       <div class="form-actions">
         <button type="submit" class="save-btn" :disabled="!isFormValid">
           {{ isEdit ? 'Save Changes' : 'Add Product' }}
@@ -152,6 +156,7 @@
           Cancel
         </button>
       </div>
+
     </form>
   </div>
 </template>
@@ -160,7 +165,7 @@
 import { reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useValidation } from "../composables/useValidation";
-import {logger} from "../utils/logger";
+import { logger } from "../utils/logger";
 
 const props = defineProps({
   product: { type: Object, default: null },
@@ -187,53 +192,60 @@ const requiredFields = ['name','gvtId','productTagline','productUrl','orderUrl',
 const limits = { name:50, productTagline:100 };
 const numberFields = ['gvtId','variableDenomPriceMinAmount','variableDenomPriceMaxAmount'];
 
-const { validateField, validateRequired } = useValidation(requiredFields, limits, numberFields);
-
+const { validateField } = useValidation(requiredFields, limits, numberFields);
 const errors = reactive({});
 
+// handle input changes
 const handleInput = (name, value) => {
   formData[name] = value;
+
+  // validate numeric and length
   if (!validateField(name, value)) {
     errors[name] = `Invalid ${name}`;
-  } else {
+  } 
+  // check required field
+  else if (requiredFields.includes(name) && !String(value ?? '').trim()) {
+    errors[name] = "This field is required";
+  } 
+  else {
     errors[name] = '';
   }
 };
 
+// computed property for overall form validity
 const isFormValid = computed(() => {
-  return validateRequired(formData, errors) && Object.values(errors).every(e => !e);
+  const requiredValid = requiredFields.every(f => String(formData[f] ?? '').trim());
+  const noErrors = Object.values(errors).every(e => !e);
+  return requiredValid && noErrors;
 });
 
+// submit handler
 const handleSubmit = () => {
-  logger.info("form submission clicked...")
+  logger.info("Form submission clicked...");
+
   if (!isFormValid.value) return;
-try{
-  if (isEdit.value) {
-    logger.success('Product updated successfully', {
-        productId: formData.id
-      });
-    alert('Product updated successfully!');
-  } else {
-    const newProductId = Date.now();
-    formData.id = newProductId;
-     logger.success('New product created successfully', {
-        productId: newProductId,
-        productName: formData.name,
-      });
-    alert('Product added successfully!');
-  }
-  router.push('/');
-}
-catch (error) {
-    logger.error('Form submission failed');
+
+  try {
+    if (isEdit.value) {
+      logger.success('Product updated successfully', { productId: formData.id });
+      alert('Product updated successfully!');
+    } else {
+      const newProductId = Date.now();
+      formData.id = newProductId;
+      logger.success('New product created successfully', { productId: newProductId, productName: formData.name });
+      alert('Product added successfully!');
+    }
+    router.push('/');
+  } catch (error) {
+    logger.error('Form submission failed', { error });
     alert('An error occurred. Please try again.');
-}
+  }
 };
 
-const handleCancel = () =>{ 
-    logger.info('clicked cancel button');
-    router.back()
-    };
+const handleCancel = () => { 
+  logger.info('Clicked cancel button');
+  router.back();
+};
 </script>
 
 <style scoped>
